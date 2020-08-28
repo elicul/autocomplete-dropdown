@@ -41,6 +41,7 @@ import { ObjectUtils } from 'primeng/components/utils/objectutils';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import { FilterUtils } from 'primeng/components/utils/filterutils';
 import { TooltipModule } from 'primeng/components/tooltip/tooltip';
+import { VirtualScrollerModule } from 'primeng/virtualscroller';
 
 export const DROPDOWN_VALUE_ACCESSOR: any = {
   provide: NG_VALUE_ACCESSOR,
@@ -868,8 +869,10 @@ export class AutocompleteDropdown
     if (!this.virtualAutoScrolled) {
       if (this.viewPortOffsetTop) {
         this.viewPort.scrollToOffset(this.viewPortOffsetTop);
+        console.log('Load More 1!');
       } else if (this.virtualScrollSelectedIndex > -1) {
         this.viewPort.scrollToIndex(this.virtualScrollSelectedIndex);
+        console.log('Load More 2!');
       }
     }
 
@@ -1470,7 +1473,13 @@ export class AutocompleteDropdown
 }
 
 @NgModule({
-  imports: [CommonModule, SharedModule, ScrollingModule, TooltipModule],
+  imports: [
+    CommonModule,
+    SharedModule,
+    ScrollingModule,
+    TooltipModule,
+    VirtualScrollerModule,
+  ],
   exports: [AutocompleteDropdown, SharedModule, ScrollingModule],
   declarations: [AutocompleteDropdown, AutocompleteDropdownItem],
 })
