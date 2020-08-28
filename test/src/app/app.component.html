@@ -1,8 +1,10 @@
 <p-autocomplete-dropdown
   [autoDisplayFirst]="false"
   [filter]="true"
-  [itemSize]="30"
+  [itemSize]="10"
+  [rowCount]="5000"
   [virtualScroll]="true"
   [options]="cities$ | async"
   [(ngModel)]="selectedCity"
+  (fetchData)="searchCities($event)"
 ></p-autocomplete-dropdown>

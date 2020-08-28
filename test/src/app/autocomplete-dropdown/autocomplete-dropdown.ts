@@ -42,6 +42,8 @@ import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import { FilterUtils } from 'primeng/components/utils/filterutils';
 import { TooltipModule } from 'primeng/components/tooltip/tooltip';
 import { VirtualScrollerModule } from 'primeng/virtualscroller';
+import { CollectionViewer, DataSource } from '@angular/cdk/collections';
+import { Observable, BehaviorSubject, Subscription } from 'rxjs';
 
 export const DROPDOWN_VALUE_ACCESSOR: any = {
   provide: NG_VALUE_ACCESSOR,
@@ -307,7 +309,7 @@ export class AutocompleteDropdownItem {
                 >
                   <ng-container
                     *cdkVirtualFor="
-                      let option of options;
+                      let option of ds;
                       let i = index;
                       let c = count;
                       let f = first;
@@ -317,7 +319,7 @@ export class AutocompleteDropdownItem {
                     "
                   >
                     <p-autocomplete-dropdown-item
-                      [option]="option"
+                      [option]="option || { label: 'Loading...', value: -1 }"
                       [selected]="selectedOption == option"
                       (onClick)="onItemClick($event)"
                       [template]="itemTemplate"
@@ -573,12 +575,16 @@ export class AutocompleteDropdown
 
   viewPortOffsetTop: number = 0;
 
+  ds: any;
+
   constructor(
     public el: ElementRef,
     public renderer: Renderer2,
     private cd: ChangeDetectorRef,
     public zone: NgZone
-  ) {}
+  ) {
+    this.ds = new MyDataSource();
+  }
 
   ngAfterContentInit() {
     this.templates.forEach((item) => {
@@ -867,12 +873,11 @@ export class AutocompleteDropdown
 
   scrollToSelectedVirtualScrollElement() {
     if (!this.virtualAutoScrolled) {
+      console.log('Scrolled');
       if (this.viewPortOffsetTop) {
         this.viewPort.scrollToOffset(this.viewPortOffsetTop);
-        console.log('Load More 1!');
       } else if (this.virtualScrollSelectedIndex > -1) {
         this.viewPort.scrollToIndex(this.virtualScrollSelectedIndex);
-        console.log('Load More 2!');
       }
     }
 
@@ -1466,9 +1471,68 @@ export class AutocompleteDropdown
     this.itemsWrapper = null;
   }
 
+  @Input() rowCount: number;
+
+  @Output() fetchData: EventEmitter<number> = new EventEmitter();
+
   ngOnDestroy() {
     this.restoreOverlayAppend();
     this.onOverlayHide();
+  }
+}
+
+export class MyDataSource extends DataSource<SelectItem | undefined> {
+  private length = 100000;
+  private pageSize = 100;
+  private cachedData = Array.from<SelectItem>({ length: this.length });
+  private fetchedPages = new Set<number>();
+  private dataStream = new BehaviorSubject<(SelectItem | undefined)[]>(
+    this.cachedData
+  );
+  private subscription = new Subscription();
+
+  connect(
+    collectionViewer: CollectionViewer
+  ): Observable<(SelectItem | undefined)[]> {
+    this.subscription.add(
+      collectionViewer.viewChange.subscribe((range) => {
+        const startPage = this.getPageForIndex(range.start);
+        const endPage = this.getPageForIndex(range.end - 1);
+        for (let i = startPage; i <= endPage; i++) {
+          this.fetchPage(i);
+        }
+      })
+    );
+    return this.dataStream;
+  }
+
+  disconnect(): void {
+    this.subscription.unsubscribe();
+  }
+
+  private getPageForIndex(index: number): number {
+    return Math.floor(index / this.pageSize);
+  }
+
+  private fetchPage(page: number) {
+    console.log(page);
+    if (this.fetchedPages.has(page)) {
+      return;
+    }
+    this.fetchedPages.add(page);
+
+    // Use `setTimeout` to simulate fetching data from server.
+    setTimeout(() => {
+      this.cachedData.splice(
+        page * this.pageSize,
+        this.pageSize,
+        ...Array.from({ length: this.pageSize }).map((_, i) => ({
+          label: `Item #${page * this.pageSize + i}`,
+          value: i,
+        }))
+      );
+      this.dataStream.next(this.cachedData);
+    }, Math.random() * 2000 + 200);
   }
 }
 

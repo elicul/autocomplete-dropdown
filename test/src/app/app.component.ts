@@ -15,10 +15,12 @@ export class AppComponent implements OnInit {
   constructor(private appService: AppService) {}
 
   ngOnInit(): void {
-    this.searchCities(0, 25);
+    this.searchCities(1);
   }
 
-  searchCities(start, stop): void {
+  searchCities(page: number): void {
+    const stop = page * 25;
+    const start = stop - 25;
     this.cities$ = this.appService.fetchItems(start, stop, '');
   }
 }
