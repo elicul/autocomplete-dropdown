@@ -5,6 +5,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { FormsModule } from '@angular/forms';
 import { AutocompleteDropdownModule } from './autocomplete-dropdown/autocomplete-dropdown';
+import { AppService } from './app.service';
 
 @NgModule({
   declarations: [AppComponent],
@@ -15,7 +16,7 @@ import { AutocompleteDropdownModule } from './autocomplete-dropdown/autocomplete
     AutocompleteDropdownModule,
     HttpClientModule,
   ],
-  providers: [],
+  providers: [AppService],
   bootstrap: [AppComponent],
   exports: [],
 })

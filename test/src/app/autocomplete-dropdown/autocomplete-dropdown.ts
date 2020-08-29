@@ -44,6 +44,7 @@ import { TooltipModule } from 'primeng/components/tooltip/tooltip';
 import { VirtualScrollerModule } from 'primeng/virtualscroller';
 import { CollectionViewer, DataSource } from '@angular/cdk/collections';
 import { Observable, BehaviorSubject, Subscription } from 'rxjs';
+import { AppService } from '../app.service';
 
 export const DROPDOWN_VALUE_ACCESSOR: any = {
   provide: NG_VALUE_ACCESSOR,
@@ -309,7 +310,7 @@ export class AutocompleteDropdownItem {
                 >
                   <ng-container
                     *cdkVirtualFor="
-                      let option of ds;
+                      let option of optionsDataSource;
                       let i = index;
                       let c = count;
                       let f = first;
@@ -575,15 +576,20 @@ export class AutocompleteDropdown
 
   viewPortOffsetTop: number = 0;
 
-  ds: any;
+  optionsDataSource: any;
 
   constructor(
     public el: ElementRef,
     public renderer: Renderer2,
     private cd: ChangeDetectorRef,
-    public zone: NgZone
+    public zone: NgZone,
+    private appService: AppService
   ) {
-    this.ds = new MyDataSource();
+    this.optionsDataSource = new OptionsDataSource(
+      appService,
+      this.rowCount,
+      this.itemSize
+    );
   }
 
   ngAfterContentInit() {
@@ -1337,6 +1343,9 @@ export class AutocompleteDropdown
   }
 
   onFilter(event): void {
+    console.log('on filter called!');
+    this.appService.fetchItems(0, event.target.value);
+
     let inputValue = event.target.value;
     if (inputValue && inputValue.length) {
       this.filterValue = inputValue;
@@ -1481,15 +1490,38 @@ export class AutocompleteDropdown
   }
 }
 
-export class MyDataSource extends DataSource<SelectItem | undefined> {
-  private length = 100000;
-  private pageSize = 100;
-  private cachedData = Array.from<SelectItem>({ length: this.length });
+export class OptionsDataSource extends DataSource<SelectItem | undefined> {
+  private rowLength: number = 5000;
+  private pageSize: number = 20;
+  private cachedData = Array.from<SelectItem>({ length: this.rowLength });
   private fetchedPages = new Set<number>();
   private dataStream = new BehaviorSubject<(SelectItem | undefined)[]>(
     this.cachedData
   );
   private subscription = new Subscription();
+  private currentPage: number = 0;
+
+  constructor(
+    private appService: AppService,
+    public rowCount: number,
+    public itemSize: number
+  ) {
+    super();
+
+    // this.pageSize = 25;
+    // this.rowLength = rowCount;
+    this.fetchedPages.add(0);
+
+    this.appService.fetchedItems$.subscribe((x) => {
+      console.log('New data stream');
+      this.cachedData.splice(
+        this.currentPage * this.pageSize,
+        this.pageSize,
+        ...x
+      );
+      this.dataStream.next(this.cachedData);
+    });
+  }
 
   connect(
     collectionViewer: CollectionViewer
@@ -1516,23 +1548,26 @@ export class MyDataSource extends DataSource<SelectItem | undefined> {
 
   private fetchPage(page: number) {
     console.log(page);
+    this.currentPage = page;
     if (this.fetchedPages.has(page)) {
       return;
     }
     this.fetchedPages.add(page);
 
+    this.appService.fetchItems(page, '');
     // Use `setTimeout` to simulate fetching data from server.
-    setTimeout(() => {
-      this.cachedData.splice(
-        page * this.pageSize,
-        this.pageSize,
-        ...Array.from({ length: this.pageSize }).map((_, i) => ({
-          label: `Item #${page * this.pageSize + i}`,
-          value: i,
-        }))
-      );
-      this.dataStream.next(this.cachedData);
-    }, Math.random() * 2000 + 200);
+    // setTimeout(() => {
+    //   this.cachedData.splice(
+    //     page * this.pageSize,
+    //     this.pageSize,
+    //     ...Array.from({ length: this.pageSize }).map((_, i) => ({
+    //       label: `Item #${page * this.pageSize + i}`,
+    //       value: i,
+    //     }))
+    //   );
+    //   console.log(this.cachedData);
+    //   this.dataStream.next(this.cachedData);
+    // }, Math.random() * 2000 + 200);
   }
 }
 
