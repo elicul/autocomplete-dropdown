@@ -4,8 +4,8 @@ import { NgModule } from '@angular/core';
 import { HttpClientModule } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { FormsModule } from '@angular/forms';
-import { AutocompleteDropdownModule } from './autocomplete-dropdown/autocomplete-dropdown';
 import { AppService } from './app.service';
+import { DropdownModule } from 'primeng/dropdown';
 
 @NgModule({
   declarations: [AppComponent],
@@ -13,8 +13,8 @@ import { AppService } from './app.service';
     BrowserModule,
     FormsModule,
     BrowserAnimationsModule,
-    AutocompleteDropdownModule,
     HttpClientModule,
+    DropdownModule,
   ],
   providers: [AppService],
   bootstrap: [AppComponent],
